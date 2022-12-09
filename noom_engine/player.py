@@ -1,0 +1,111 @@
+import pygame
+from math import sin, cos, radians
+
+
+class Player:
+    def __init__(self, start_x=3, start_y=3, tile_size=100, start_angle=0, movement_speed=2, mouse_sensitive=0.01):
+        self.x = start_x
+        self.y = start_y
+        self.angle = start_angle
+        self.speed = movement_speed
+        self.mouse_sensitive = mouse_sensitive
+        self.tile_size = tile_size
+
+    @property
+    def pos(self):
+        return self.x, self.y
+
+    @property
+    def position(self):
+        return self.x, self.y
+
+    def mapping(self, a, b) -> tuple:
+        return (a // self.tile_size) * self.tile_size, (b // self.tile_size) * self.tile_size
+
+    def calculate_direction(self, raw_direction, angle, axis) -> list:
+        direction = [0, 0]
+        if axis == "z":
+            direction[0] += cos(angle) * raw_direction[0]
+            direction[1] += sin(angle) * raw_direction[1]
+        elif axis == "x":
+            direction[0] += sin(angle) * raw_direction[0]
+            direction[1] += cos(angle) * raw_direction[1]
+        return direction
+
+    def movement(self, map_):
+        keys = pygame.key.get_pressed()
+
+        direction = [0, 0]
+        velocity = [0, 0]
+
+        axis = set()
+
+        if keys[pygame.K_w]:
+            axis.add("z")
+
+            direction[0] = 1
+            direction[1] = 1
+
+            dir_ = self.calculate_direction(direction, self.angle, "z")
+
+            velocity[0] += dir_[0]
+            velocity[1] += dir_[1]
+
+        if keys[pygame.K_s]:
+            axis.add("z")
+
+            direction[0] = -1
+            direction[1] = -1
+
+            dir_ = self.calculate_direction(direction, self.angle, "z")
+
+            velocity[0] += dir_[0]
+            velocity[1] += dir_[1]
+
+        if keys[pygame.K_d]:
+            axis.add("x")
+
+            direction[0] = -1
+            direction[1] = 1
+
+            dir_ = self.calculate_direction(direction, self.angle, "x")
+
+            velocity[0] += dir_[0]
+            velocity[1] += dir_[1]
+
+        if keys[pygame.K_a]:
+            axis.add("x")
+
+            direction[0] = 1
+            direction[1] = -1
+
+            dir_ = self.calculate_direction(direction, self.angle, "x")
+
+            velocity[0] += dir_[0]
+            velocity[1] += dir_[1]
+
+        if velocity:
+            x_ = velocity[0] * self.speed
+            y_ = velocity[1] * self.speed
+
+            if self.mapping(self.x + x_, self.y + y_) not in map_:
+                self.x += x_
+                self.y += y_
+            else:
+                for deg in [-15, 15]:
+                    angle = radians(deg)
+                    velocity = [0, 0]
+                    for axis_ in axis:
+                        dir_ = self.calculate_direction(direction, self.angle + angle, axis_)
+                        velocity[0] += dir_[0]
+                        velocity[1] += dir_[1]
+                    x_ = velocity[0] * self.speed
+                    y_ = velocity[1] * self.speed
+                    if self.mapping(self.x + x_, self.y + y_) not in map_:
+                        self.x += x_
+                        self.y += y_
+                        break
+
+        mouse_pos_relative = pygame.mouse.get_rel()
+        if mouse_pos_relative:
+            self.angle += mouse_pos_relative[0] * self.mouse_sensitive

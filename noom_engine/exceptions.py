@@ -1,0 +1,2 @@
+class EngineNotInitialized(Exception):
+    pass
