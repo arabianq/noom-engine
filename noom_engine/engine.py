@@ -22,6 +22,8 @@ class NoomEngine:
         self.VIEW_DEPTH = view_distance
         self.WINDOW_CAPTION = window_caption
 
+        #  Создание более оптимизированной карты из списка. Фактически указываются лишь стены.
+        #  Скорее всего придётся заменить, когда будем добавлять врагов и всякое такое
         self.MAP = Map(self.TILE_SIZE, text_map).create_map()
 
         if player is None:
@@ -31,6 +33,7 @@ class NoomEngine:
         else:
             self.PLAYER = player
 
+        #  Параметры для трассировки лучей, которые зависят от поля зрения и разрешения
         self.ANGLE_DELTA = self.FOV / self.RAYS_COUNT
         self.DIST = self.RAYS_COUNT / (2 * tan(self.FOV / 2))
         self.RATIO = self.DIST * self.TILE_SIZE
@@ -39,12 +42,14 @@ class NoomEngine:
         self.screen = None
         self.clock = pygame.time.Clock()
 
+    #  Функция инициализации. Обязательна для запуска игры
     def init(self):
         pygame.init()
         pygame.mouse.set_visible(False)
         pygame.display.set_caption(self.WINDOW_CAPTION)
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
 
+    #  Функция, которая проверяет, являются ли координаты стеной
     def mapping(self, a, b) -> tuple:
         return (a // self.TILE_SIZE) * self.TILE_SIZE, (b // self.TILE_SIZE) * self.TILE_SIZE
 
@@ -53,10 +58,12 @@ class NoomEngine:
         x_max, y_max = self.mapping(x0, y0)
         current_angle = self.PLAYER.angle - self.FOV / 2
         rects = []
+        #  Перебор каждого луча
         for ray in range(self.RAYS_COUNT):
             sin_a = sin(current_angle)
             cos_a = cos(current_angle)
 
+            #  Тут уже начинается трассировка, пока что мне лень её полностью описывать =)
             if cos_a >= 0:
                 x = x_max + self.TILE_SIZE
                 x_d = 1
@@ -97,22 +104,28 @@ class NoomEngine:
 
             height = self.RATIO / depth
 
+            #  Тут формируется цвет в зависимости от расстояния для стены (дальше - темнее).
+            #  Можно попробовать поиграться с цветами
             color_multiplier = 0.00001
             color_ = 200 / (1 + (depth ** 2) * color_multiplier)
             color = (color_, color_, color_)
 
+            #  Запоминаем параметры прямоугольника, который потом будем рисовать. Каждый rect в rects - часть стен
             rects.append(
                 ((ray * self.GRAPHICS_SCALE, self.HEIGHT / 2 - height // 2, self.GRAPHICS_SCALE, height), color)
             )
             current_angle += self.ANGLE_DELTA
         return rects
 
+    #  Функция для отрисовки ФПС, ничего необычного
     def render_fps_counter(self, x, y, font_size=26):
         font = pygame.font.Font(None, font_size)
         text_surface = font.render(str(round(self.clock.get_fps(), 2)), True, RED)
         self.screen.blit(text_surface, (x, y))
 
+    #  Основной игровой цикл
     def mainloop(self):
+        #  Если не была проведеня инициализация, то вылетит ошибка
         if self.screen is None:
             raise EngineNotInitialized("Engine was not initialized")
 
@@ -121,16 +134,21 @@ class NoomEngine:
                 if event.type == pygame.QUIT:
                     return
 
+            #  Заливаем экран чёрным и запускаем функцию передвижения игрока
             self.screen.fill(BLACK)
             self.PLAYER.movement(self.MAP)
 
+            #  Рисуем небо и пол
             self.screen.fill(BLUE, (0, 0, self.WIDTH, self.HEIGHT // 2))
             self.screen.fill(BLACK, (0, self.HEIGHT // 2, self.WIDTH, self.HEIGHT))
 
+            #  Тут получаем все стены и рисуем каждую из них
             walls = self.ray_cast()
             for wall in walls:
                 pygame.draw.rect(self.screen, wall[1], wall[0])
 
+            #  Это закоментированная отрисовка двумерной проекции.
+            #  Может в будущем послужить основной для миникарты
             # pygame.draw.circle(self.screen, GREEN, self.PLAYER.pos, 15)
             # pygame.draw.line(self.screen, WHITE, self.PLAYER.pos, (self.PLAYER.x * self.WIDTH * cos(self.PLAYER.angle),
             #                                                        self.PLAYER.y * self.WIDTH * sin(self.PLAYER.angle)))
@@ -138,6 +156,7 @@ class NoomEngine:
             # for x, y in self.MAP:
             #     pygame.draw.rect(self.screen, GREEN, (x, y, self.TILE_SIZE, self.TILE_SIZE), 1)
 
+            #  Отрисовываем счётчик ФПС
             self.render_fps_counter(self.WIDTH - 50, self.HEIGHT - 30)
 
             pygame.display.flip()

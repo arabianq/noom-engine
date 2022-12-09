@@ -11,6 +11,7 @@ class Player:
         self.mouse_sensitive = mouse_sensitive
         self.tile_size = tile_size
 
+    #  Два свойста для получения позиции. Сделал, потому что могу =)
     @property
     def pos(self):
         return self.x, self.y
@@ -19,9 +20,12 @@ class Player:
     def position(self):
         return self.x, self.y
 
+    #  Копия функции из engine.py. Потом надо будет их объединить
     def mapping(self, a, b) -> tuple:
         return (a // self.tile_size) * self.tile_size, (b // self.tile_size) * self.tile_size
 
+    #  Просчёт направления движения с учётом поворота камеры
+    #  Не уверен, что она идеальна, но лучше я ничего не придумал
     def calculate_direction(self, raw_direction, angle, axis) -> list:
         direction = [0, 0]
         if axis == "z":
@@ -32,6 +36,7 @@ class Player:
             direction[1] += cos(angle) * raw_direction[1]
         return direction
 
+    #  Основная функция передвижения игрока
     def movement(self, map_):
         keys = pygame.key.get_pressed()
 
@@ -41,6 +46,10 @@ class Player:
         axis = set()
 
         if keys[pygame.K_w]:
+            #  Если кратко, то принцип следующий:
+            #  в зависимости от нажатых кнопок устанавливаем "сырое" направление,
+            #  затем изменяем его в зависимости от поворота камеры.
+            #  В целом, тут несложно разобраться
             axis.add("z")
 
             direction[0] = 1
@@ -88,24 +97,31 @@ class Player:
             x_ = velocity[0] * self.speed
             y_ = velocity[1] * self.speed
 
+            #  Если не стена, то идти можно
             if self.mapping(self.x + x_, self.y + y_) not in map_:
                 self.x += x_
                 self.y += y_
+            #  Тут я попытался реализовать скольжение у стены. Т.е. если ты прижат к стене, то можно попытаться чуть
+            #  повернуть камеру и пойти вдоль стены. Работает, но пока что камера дёргается.
             else:
                 for deg in [-15, 15]:
                     angle = radians(deg)
                     velocity = [0, 0]
+
                     for axis_ in axis:
                         dir_ = self.calculate_direction(direction, self.angle + angle, axis_)
                         velocity[0] += dir_[0]
                         velocity[1] += dir_[1]
+
                     x_ = velocity[0] * self.speed
                     y_ = velocity[1] * self.speed
+
                     if self.mapping(self.x + x_, self.y + y_) not in map_:
                         self.x += x_
                         self.y += y_
                         break
 
+        #  Ну а тут мышкой кручу камеру по горизонтали. Всё ещё не уверен, хорошая ли идея поворочиваться мышкой
         mouse_pos_relative = pygame.mouse.get_rel()
         if mouse_pos_relative:
             self.angle += mouse_pos_relative[0] * self.mouse_sensitive
