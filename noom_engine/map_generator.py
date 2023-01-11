@@ -23,6 +23,16 @@ class Map:
 
         self.TILE_SIZE = tile_size
 
+    # def create_map(self) -> list:
+    #     map_ = []
+    #     for y_ in range(len(self.TEXT_MAP)):
+    #         map_.append([])
+    #         y = self.TEXT_MAP[y_]
+    #         for x in y:
+    #             map_[y].append(x)
+    #     print(map_)
+    #     return map_
+
     def create_map(self) -> set:
         map_ = set()
         for i, row in enumerate(self.TEXT_MAP):

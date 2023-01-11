@@ -112,7 +112,8 @@ class NoomEngine:
 
             #  Запоминаем параметры прямоугольника, который потом будем рисовать. Каждый rect в rects - часть стен
             rects.append(
-                ((ray * self.GRAPHICS_SCALE, self.HEIGHT / 2 - height // 2, self.GRAPHICS_SCALE, height), color)
+                ((ray * self.GRAPHICS_SCALE, self.HEIGHT / 2 - height // 2, self.GRAPHICS_SCALE, height),
+                 (color, depth))
             )
             current_angle += self.ANGLE_DELTA
         return rects
@@ -145,7 +146,9 @@ class NoomEngine:
             #  Тут получаем все стены и рисуем каждую из них
             walls = self.ray_cast()
             for wall in walls:
-                pygame.draw.rect(self.screen, wall[1], wall[0])
+                wall = [list(el) for el in wall]
+                wall[0][1] += self.PLAYER.height
+                pygame.draw.rect(self.screen, wall[1][0], wall[0])
 
             #  Это закоментированная отрисовка двумерной проекции.
             #  Может в будущем послужить основной для миникарты

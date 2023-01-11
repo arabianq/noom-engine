@@ -3,12 +3,20 @@ from math import sin, cos, radians
 
 
 class Player:
-    def __init__(self, start_x=3, start_y=3, tile_size=100, start_angle=0, movement_speed=2, mouse_sensitive=0.01):
+    def __init__(self, start_x=3, start_y=3, tile_size=100, start_angle=0, movement_speed=2, jump_force=2, gravity=0.1,
+                 mouse_sensitive=0.01):
         self.x = start_x
         self.y = start_y
         self.angle = start_angle
+
         self.speed = movement_speed
+        self.jump_force = jump_force
+        self.gravity = gravity
+        self.height = 0
+        self.vel = [0, 0]
+
         self.mouse_sensitive = mouse_sensitive
+
         self.tile_size = tile_size
 
     #  Два свойста для получения позиции. Сделал, потому что могу =)
@@ -26,7 +34,8 @@ class Player:
 
     #  Просчёт направления движения с учётом поворота камеры
     #  Не уверен, что она идеальна, но лучше я ничего не придумал
-    def calculate_direction(self, raw_direction, angle, axis) -> list:
+    @staticmethod
+    def calculate_direction(raw_direction, angle, axis) -> list:
         direction = [0, 0]
         if axis == "z":
             direction[0] += cos(angle) * raw_direction[0]
@@ -44,6 +53,19 @@ class Player:
         velocity = [0, 0]
 
         axis = set()
+
+        if self.height > 0:# and not self.vel[1]:
+            self.vel[1] -= self.gravity
+        elif self.height < 0:
+            self.height = 0
+            self.vel[1] = 0
+
+        if keys[pygame.K_SPACE] and self.height == 0:
+            self.vel[1] = self.jump_force
+
+        if self.vel[1]:
+            self.height += self.vel[1] // self.gravity
+            self.vel[1] -= self.gravity
 
         if keys[pygame.K_w]:
             #  Если кратко, то принцип следующий:
@@ -104,7 +126,7 @@ class Player:
             #  Тут я попытался реализовать скольжение у стены. Т.е. если ты прижат к стене, то можно попытаться чуть
             #  повернуть камеру и пойти вдоль стены. Работает, но пока что камера дёргается.
             else:
-                for deg in [-15, 15]:
+                for deg in range(-15, 16):
                     angle = radians(deg)
                     velocity = [0, 0]
 
